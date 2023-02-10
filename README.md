@@ -7,7 +7,7 @@
 
 # Installation
 ## EXE
-[Releases](https://github.com/kairi003/PuncSwitch.ahk/releases)から`PunchSwitch.exe`をダウンロードして適当なディレクトリで実行してください
-## AutoHotkey 1.1
+[Releases](https://github.com/kairi003/PuncSwitch.ahk/releases)から`PunchSwitch.exe`をダウンロードして適当なディレクトリで実行してください。
+## AutoHotkey 2.0
 `PunchSwitch.ahk`と`psIcon.dll`を同じディレクトリに配置して実行してください
 
