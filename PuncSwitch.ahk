@@ -1,47 +1,40 @@
-﻿#NoEnv
-#SingleInstance, Force
-SendMode Input
-SetWorkingDir %A_ScriptDir%
-SetKeyDelay, 10
-SetTitleMatchMode, 2
-iconPath = %A_Temp%\psIcon.dll
-FileInstall, psIcon.dll, %iconPath%, 1
-Menu, Tray, Icon, %iconPath%, 1
+﻿#Requires AutoHotkey >=2.0
+SetWorkingDir A_ScriptDir
 
-comma := False
-period := False
-Return
+;@Ahk2Exe-SetMainIcon app.ico
 
-IME_GET(WinTitle="A")  {
-	ControlGet,hwnd,HWND,,,%WinTitle%
-	if	(WinActive(WinTitle))	{
-		ptrSize := !A_PtrSize ? 4 : A_PtrSize
-	    VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
-	    NumPut(cbSize, stGTI,  0, "UInt")   ;	DWORD   cbSize;
-		hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
-	             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
-	}
+FileInstall "icon.dll", "icon.dll", 1
+TraySetIcon("icon.dll")
 
-    return DllCall("SendMessage"
-          , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
-          , UInt, 0x0283  ;Message : WM_IME_CONTROL
-          ,  Int, 0x0005  ;wParam  : IMC_GETOPENSTATUS
-          ,  Int, 0)      ;lParam  : 0
+cpf := 0
+TraySetIcon(A_IconFile, cpf + 1)
+return
+
+
+IME_GET(WinTitle := "A") {
+    hwnd := WinGetID(WinTitle)
+    if WinActive(WinTitle) {
+        cbSize := 4 + 4 + (A_PtrSize * 6) + 16
+        stGTI := Buffer(cbSize, 0) ; GUITHREADINFO stGTI
+        NumPut("UInt", cbSize, stGTI) ; DWORD cbSize
+        if DllCall("GetGUIThreadInfo", "Uint", 0, "Ptr*", stGTI.Ptr)
+            hwnd := NumGet(stGTI, 8 + A_PtrSize, "UInt") ; HWND  hwndFocus
+    }
+    imeHwnd := DllCall("imm32\ImmGetDefaultIMEWnd", "Uint", hwnd)
+    WM_IME_CONTROL:= 0x0283
+    IMC_GETOPENSTATUS := 0x0005
+    return SendMessage(WM_IME_CONTROL, IMC_GETOPENSTATUS, 0, imeHwnd)
 }
 
-^sc07B::
-    comma ^= True
-    period ^= True
-    x := ((comma << 1) | period) + 1
-    Menu, Tray, Icon, %iconPath%, %x%
-    TrayTip,, Swiched Punctuation Mode
-Return
 
-#If IME_Get()
-    ,::
-        SendRaw, % comma ? "，" : "、"
-    Return
+^sc07B:: {
+    global cpf
+    cpf := ~cpf & 3
+    TraySetIcon(A_IconFile, cpf + 1)
+    TrayTip("Swiched Punctuation Mode", unset, "Mute")
+    return
+}
 
-    .::
-        SendRaw, % period ? "．" : "。"
-    Return
+#HotIf IME_Get()
+,::Send(cpf&1 ? "，" : "、")
+.::Send(cpf&2 ? "．" : "。")
